@@ -11,7 +11,6 @@ define('DB_NAME', 'pharmacy_management');
 
 function getDBConnection() {
     static $pdo = null;
-
     if ($pdo === null) {
         try {
             $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
@@ -19,12 +18,9 @@ function getDBConnection() {
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
-                PDO::ATTR_TIMEOUT            => 3,
             ];
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
-            $pdo = false;
-
             // Log error to file for easier debugging and return false so helper can
             // use fallback sample data when database is not reachable.
             $logDir = __DIR__ . '/../logs';
@@ -37,7 +33,6 @@ function getDBConnection() {
             return false;
         }
     }
-
     return $pdo;
 }
 ?>

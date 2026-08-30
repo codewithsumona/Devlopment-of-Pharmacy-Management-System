@@ -94,5 +94,33 @@
                 "quantity": 1
             }
         ]
+    },
+    {
+        "id": 4,
+        "invoice_no": "INV-OFFLINE-20260830121055",
+        "customer_name": "sumona",
+        "customer_phone": "",
+        "pharmacist_id": 1,
+        "pharmacist_name": "Dr. Sarah Jenkins",
+        "subtotal": "54.00",
+        "discount": "5.40",
+        "grand_total": "48.60",
+        "payment_method": "Card",
+        "payment_status": "Paid",
+        "sale_date": "2026-08-30 12:10:55",
+        "items": [
+            {
+                "medicine_id": 3,
+                "name": "Fexo 120mg",
+                "unit_price": 9.5,
+                "quantity": 2
+            },
+            {
+                "medicine_id": 6,
+                "name": "Azithrocin 500mg",
+                "unit_price": 35,
+                "quantity": 1
+            }
+        ]
     }
 ]
