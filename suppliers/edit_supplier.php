@@ -1,5 +1,48 @@
 <?php
 $path_prefix = '../';
+if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/db_helper.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+        header("Location: supplier_list.php?msg=" . urlencode("Invalid CSRF token."));
+        exit;
+    }
+    $sup_name = trim($_POST['supplier_name'] ?? '');
+    $company = trim($_POST['company_name'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+
+    if ($sup_name === '' || $company === '' || $phone === '' || $email === '') {
+        header("Location: supplier_list.php?msg=" . urlencode("Missing required supplier fields."));
+        exit;
+    }
+
+    $pdo = getDBConnection();
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE suppliers SET supplier_name = :supplier_name, company_name = :company_name, phone = :phone, email = :email, address = :address WHERE id = :id");
+            $stmt->execute([
+                ':supplier_name' => $sup_name,
+                ':company_name' => $company,
+                ':phone' => $phone,
+                ':email' => $email,
+                ':address' => $address,
+                ':id' => $target_sup['id']
+            ]);
+            header("Location: supplier_list.php?msg=" . urlencode("Supplier '{$sup_name}' updated."));
+            exit;
+        } catch (Exception $e) {
+            header("Location: supplier_list.php?msg=" . urlencode("DB error updating supplier."));
+            exit;
+        }
+    } else {
+        header("Location: supplier_list.php?msg=" . urlencode("Supplier '{$sup_name}' updated (offline fallback)."));
+        exit;
+    }
+}
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/sidebar.php';
 
@@ -14,12 +57,6 @@ foreach ($suppliers as $s) {
     }
 }
 if (!$target_sup) $target_sup = $suppliers[0];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $sup_name = htmlspecialchars($_POST['supplier_name'] ?? 'Supplier');
-    header("Location: supplier_list.php?msg=" . urlencode("Supplier '{$sup_name}' updated successfully!"));
-    exit;
-}
 ?>
 
 <div class="main-wrapper">
@@ -47,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="card-body">
                 <form method="POST" action="edit_supplier.php?id=<?php echo $target_sup['id']; ?>">
+                    <?php echo csrf_input(); ?>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Full Supplier Name *</label>

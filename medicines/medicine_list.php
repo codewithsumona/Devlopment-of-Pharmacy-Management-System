@@ -3,10 +3,33 @@ $path_prefix = '../';
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/sidebar.php';
 
-$medicines = get_all_medicines();
+ $medicines = get_all_medicines();
+ // Handle delete action via POST with CSRF
+ $action_msg = '';
+ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+     require_once __DIR__ . '/../includes/csrf.php';
+     $delId = (int)$_POST['delete_id'];
+     if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+         $action_msg = 'Invalid CSRF token.';
+     } else {
+         $pdo = getDBConnection();
+         if ($pdo) {
+             try {
+                 $stmt = $pdo->prepare("DELETE FROM medicines WHERE id = :id");
+                 $stmt->execute([':id' => $delId]);
+                 $action_msg = "Medicine #{$delId} deleted successfully.";
+             } catch (Exception $e) {
+                 $action_msg = "Unable to delete medicine via DB (prototype fallback).";
+             }
+         } else {
+             $action_msg = "Delete simulated (offline fallback) for Medicine #{$delId}.";
+         }
+     }
+     header('Location: medicine_list.php?msg=' . urlencode($action_msg));
+     exit;
+ }
 
 // Success Notification handle
-$action_msg = '';
 if (isset($_GET['msg'])) {
     $action_msg = htmlspecialchars($_GET['msg']);
 }
@@ -105,7 +128,7 @@ if (isset($_GET['msg'])) {
                                         <a href="edit_medicine.php?id=<?php echo $med['id']; ?>" class="btn btn-sm btn-outline btn-icon" title="Edit Medicine" style="color:var(--secondary);">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
-                                        <button class="btn btn-sm btn-outline btn-icon" title="Delete Medicine" style="color:var(--danger);" onclick="confirmDelete('<?php echo htmlspecialchars($med['medicine_name']); ?>', 'medicine_list.php?delete=<?php echo $med['id']; ?>')">
+                                        <button class="btn btn-sm btn-outline btn-icon" title="Delete Medicine" style="color:var(--danger);" onclick="confirmDelete('<?php echo htmlspecialchars($med['medicine_name']); ?>', 'medicine_list.php', <?php echo $med['id']; ?>)">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </div>

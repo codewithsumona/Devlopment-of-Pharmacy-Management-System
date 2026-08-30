@@ -5,7 +5,31 @@ require_once __DIR__ . '/../includes/sidebar.php';
 
 $staff_members = get_all_staff();
 
+// Handle delete action via POST + CSRF
 $action_msg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    require_once __DIR__ . '/../includes/csrf.php';
+    $delId = (int)$_POST['delete_id'];
+    if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+        $action_msg = 'Invalid CSRF token.';
+    } else {
+        $pdo = getDBConnection();
+        if ($pdo) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM users WHERE id = :id");
+                $stmt->execute([':id' => $delId]);
+                $action_msg = "Staff member #{$delId} deleted successfully.";
+            } catch (Exception $e) {
+                $action_msg = "Unable to delete staff via DB (prototype fallback).";
+            }
+        } else {
+            $action_msg = "Delete simulated (offline fallback) for Staff #{$delId}.";
+        }
+    }
+    header('Location: staff_list.php?msg=' . urlencode($action_msg));
+    exit;
+}
+
 if (isset($_GET['msg'])) {
     $action_msg = htmlspecialchars($_GET['msg']);
 }
@@ -82,7 +106,7 @@ if (isset($_GET['msg'])) {
                                         <a href="edit_staff.php?id=<?php echo $st['id']; ?>" class="btn btn-sm btn-outline btn-icon" title="Edit Staff" style="color:var(--secondary);">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
-                                        <button class="btn btn-sm btn-outline btn-icon" title="Delete Staff" style="color:var(--danger);" onclick="confirmDelete('<?php echo htmlspecialchars($st['full_name']); ?>', 'staff_list.php?delete=<?php echo $st['id']; ?>')">
+                                        <button class="btn btn-sm btn-outline btn-icon" title="Delete Staff" style="color:var(--danger);" onclick="confirmDelete('<?php echo htmlspecialchars($st['full_name']); ?>', 'staff_list.php', <?php echo $st['id']; ?>)">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </div>

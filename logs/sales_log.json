@@ -1,0 +1,98 @@
+[
+    {
+        "id": 1,
+        "invoice_no": "INV-OFFLINE-20260828150645",
+        "customer_name": "Walk-in Customer",
+        "customer_phone": "",
+        "pharmacist_id": 1,
+        "pharmacist_name": "Dr. Sarah Jenkins",
+        "subtotal": "44.50",
+        "discount": "13.35",
+        "grand_total": "31.15",
+        "payment_method": "Cash",
+        "payment_status": "Paid",
+        "sale_date": "2026-08-28 15:06:45",
+        "items": [
+            {
+                "medicine_id": 3,
+                "name": "Fexo 120mg",
+                "unit_price": 9.5,
+                "quantity": 1
+            },
+            {
+                "medicine_id": 6,
+                "name": "Azithrocin 500mg",
+                "unit_price": 35,
+                "quantity": 1
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "invoice_no": "INV-OFFLINE-20260828150649",
+        "customer_name": "Walk-in Customer",
+        "customer_phone": "",
+        "pharmacist_id": 1,
+        "pharmacist_name": "Dr. Sarah Jenkins",
+        "subtotal": "44.50",
+        "discount": "13.35",
+        "grand_total": "31.15",
+        "payment_method": "Cash",
+        "payment_status": "Paid",
+        "sale_date": "2026-08-28 15:06:49",
+        "items": [
+            {
+                "medicine_id": 3,
+                "name": "Fexo 120mg",
+                "unit_price": 9.5,
+                "quantity": 1
+            },
+            {
+                "medicine_id": 6,
+                "name": "Azithrocin 500mg",
+                "unit_price": 35,
+                "quantity": 1
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "invoice_no": "INV-OFFLINE-20260828150726",
+        "customer_name": "Sumona",
+        "customer_phone": "",
+        "pharmacist_id": 1,
+        "pharmacist_name": "Dr. Sarah Jenkins",
+        "subtotal": "53.00",
+        "discount": "47.70",
+        "grand_total": "5.30",
+        "payment_method": "Card",
+        "payment_status": "Paid",
+        "sale_date": "2026-08-28 15:07:26",
+        "items": [
+            {
+                "medicine_id": 7,
+                "name": "Ceevit 250mg Chewable",
+                "unit_price": 2.5,
+                "quantity": 1
+            },
+            {
+                "medicine_id": 6,
+                "name": "Azithrocin 500mg",
+                "unit_price": 35,
+                "quantity": 1
+            },
+            {
+                "medicine_id": 3,
+                "name": "Fexo 120mg",
+                "unit_price": 9.5,
+                "quantity": 1
+            },
+            {
+                "medicine_id": 2,
+                "name": "Seclo 20mg",
+                "unit_price": 6,
+                "quantity": 1
+            }
+        ]
+    }
+]

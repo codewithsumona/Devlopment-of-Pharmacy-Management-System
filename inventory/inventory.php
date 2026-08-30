@@ -117,7 +117,7 @@ if ($filter_status !== 'all') {
 <script>
 function openStockAdjustmentModal() {
     openModal(
-        'Quick Stock Adjustment (Prototype Demo)',
+        'Quick Stock Adjustment',
         `<form id="stockForm">
             <div class="form-group">
                 <label class="form-label">Select Medicine Item</label>

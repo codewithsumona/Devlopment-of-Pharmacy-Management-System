@@ -1,13 +1,54 @@
 <?php
 $path_prefix = '../';
+if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/db_helper.php';
+
+// Process POSTs before including templates
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+        header("Location: staff_list.php?msg=" . urlencode("Invalid CSRF token."));
+        exit;
+    }
+    $full_name = trim($_POST['full_name'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $role = $_POST['role'] ?? 'Staff';
+    $password = $_POST['password'] ?? '';
+
+    if ($full_name === '' || $username === '' || $email === '' || $password === '') {
+        header("Location: staff_list.php?msg=" . urlencode("Missing required staff fields."));
+        exit;
+    }
+
+    $pdo = getDBConnection();
+    if ($pdo) {
+        try {
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("INSERT INTO users (username, password, full_name, email, phone, role, status) VALUES (:username, :password, :full_name, :email, :phone, :role, 'Active')");
+            $stmt->execute([
+                ':username' => $username,
+                ':password' => $hash,
+                ':full_name' => $full_name,
+                ':email' => $email,
+                ':phone' => $phone,
+                ':role' => $role
+            ]);
+            $newId = $pdo->lastInsertId();
+            header("Location: staff_list.php?msg=" . urlencode("Staff '{$full_name}' added (ID: {$newId})."));
+            exit;
+        } catch (Exception $e) {
+            header("Location: staff_list.php?msg=" . urlencode("DB error adding staff."));
+            exit;
+        }
+    } else {
+        header("Location: staff_list.php?msg=" . urlencode("Staff '{$full_name}' registered (offline fallback)."));
+        exit;
+    }
+}
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/sidebar.php';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $staff_name = htmlspecialchars($_POST['full_name'] ?? 'New Employee');
-    header("Location: staff_list.php?msg=" . urlencode("Staff member '{$staff_name}' added successfully!"));
-    exit;
-}
 ?>
 
 <div class="main-wrapper">
@@ -35,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="card-body">
                 <form method="POST" action="add_staff.php">
+                    <?php echo csrf_input(); ?>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Full Name *</label>

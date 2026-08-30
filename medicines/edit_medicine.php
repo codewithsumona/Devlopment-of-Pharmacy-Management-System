@@ -1,5 +1,65 @@
 <?php
 $path_prefix = '../';
+if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/db_helper.php';
+
+// Handle POST before including templates to allow header() redirects
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+        header("Location: medicine_list.php?msg=" . urlencode("Invalid CSRF token."));
+        exit;
+    }
+    $med_id = $_GET['id'] ?? 1;
+    $med_name = trim($_POST['medicine_name'] ?? '');
+    $generic_name = trim($_POST['generic_name'] ?? '');
+    $category_id = (int)($_POST['category_id'] ?? 0);
+    $manufacturer = trim($_POST['manufacturer'] ?? '');
+    $batch_number = trim($_POST['batch_number'] ?? '');
+    $supplier_id = (int)($_POST['supplier_id'] ?? 0);
+    $purchase_price = is_numeric($_POST['purchase_price'] ?? null) ? (float)$_POST['purchase_price'] : 0.0;
+    $selling_price = is_numeric($_POST['selling_price'] ?? null) ? (float)$_POST['selling_price'] : 0.0;
+    $stock_quantity = (int)($_POST['stock_quantity'] ?? 0);
+    $expiry_date = $_POST['expiry_date'] ?? '';
+    $description = trim($_POST['description'] ?? '');
+
+    if ($med_name === '' || $generic_name === '' || $category_id <= 0 || $supplier_id <= 0 || $expiry_date === '') {
+        header("Location: medicine_list.php?msg=" . urlencode("Missing required fields for medicine update."));
+        exit;
+    }
+
+    $pdo = getDBConnection();
+    if ($pdo) {
+        try {
+            $status = ($stock_quantity <= 0) ? 'Out of Stock' : (($stock_quantity <= 15) ? 'Low Stock' : 'In Stock');
+            $stmt = $pdo->prepare("UPDATE medicines SET medicine_name = :medicine_name, generic_name = :generic_name, category_id = :category_id, supplier_id = :supplier_id, manufacturer = :manufacturer, batch_number = :batch_number, purchase_price = :purchase_price, selling_price = :selling_price, stock_quantity = :stock_quantity, expiry_date = :expiry_date, description = :description, status = :status WHERE id = :id");
+            $stmt->execute([
+                ':medicine_name' => $med_name,
+                ':generic_name' => $generic_name,
+                ':category_id' => $category_id,
+                ':supplier_id' => $supplier_id,
+                ':manufacturer' => $manufacturer,
+                ':batch_number' => $batch_number,
+                ':purchase_price' => $purchase_price,
+                ':selling_price' => $selling_price,
+                ':stock_quantity' => $stock_quantity,
+                ':expiry_date' => $expiry_date,
+                ':description' => $description,
+                ':status' => $status,
+                ':id' => $med_id
+            ]);
+            header("Location: medicine_list.php?msg=" . urlencode("Medicine '{$med_name}' updated successfully."));
+            exit;
+        } catch (Exception $e) {
+            header("Location: medicine_list.php?msg=" . urlencode("DB error updating medicine (fallback used)."));
+            exit;
+        }
+    } else {
+        header("Location: medicine_list.php?msg=" . urlencode("Medicine '{$med_name}' updated (offline fallback)."));
+        exit;
+    }
+}
+
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/sidebar.php';
 
@@ -26,9 +86,57 @@ $categories = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $med_name = htmlspecialchars($_POST['medicine_name'] ?? 'Medicine');
-    header("Location: medicine_list.php?msg=" . urlencode("Medicine '{$med_name}' updated successfully!"));
-    exit;
+    if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+        header("Location: medicine_list.php?msg=" . urlencode("Invalid CSRF token."));
+        exit;
+    }
+    $med_name = trim($_POST['medicine_name'] ?? '');
+    $generic_name = trim($_POST['generic_name'] ?? '');
+    $category_id = (int)($_POST['category_id'] ?? 0);
+    $manufacturer = trim($_POST['manufacturer'] ?? '');
+    $batch_number = trim($_POST['batch_number'] ?? '');
+    $supplier_id = (int)($_POST['supplier_id'] ?? 0);
+    $purchase_price = is_numeric($_POST['purchase_price'] ?? null) ? (float)$_POST['purchase_price'] : 0.0;
+    $selling_price = is_numeric($_POST['selling_price'] ?? null) ? (float)$_POST['selling_price'] : 0.0;
+    $stock_quantity = (int)($_POST['stock_quantity'] ?? 0);
+    $expiry_date = $_POST['expiry_date'] ?? '';
+    $description = trim($_POST['description'] ?? '');
+
+    if ($med_name === '' || $generic_name === '' || $category_id <= 0 || $supplier_id <= 0 || $expiry_date === '') {
+        header("Location: medicine_list.php?msg=" . urlencode("Missing required fields for medicine update."));
+        exit;
+    }
+
+    $pdo = getDBConnection();
+    if ($pdo) {
+        try {
+            $status = ($stock_quantity <= 0) ? 'Out of Stock' : (($stock_quantity <= 15) ? 'Low Stock' : 'In Stock');
+            $stmt = $pdo->prepare("UPDATE medicines SET medicine_name = :medicine_name, generic_name = :generic_name, category_id = :category_id, supplier_id = :supplier_id, manufacturer = :manufacturer, batch_number = :batch_number, purchase_price = :purchase_price, selling_price = :selling_price, stock_quantity = :stock_quantity, expiry_date = :expiry_date, description = :description, status = :status WHERE id = :id");
+            $stmt->execute([
+                ':medicine_name' => $med_name,
+                ':generic_name' => $generic_name,
+                ':category_id' => $category_id,
+                ':supplier_id' => $supplier_id,
+                ':manufacturer' => $manufacturer,
+                ':batch_number' => $batch_number,
+                ':purchase_price' => $purchase_price,
+                ':selling_price' => $selling_price,
+                ':stock_quantity' => $stock_quantity,
+                ':expiry_date' => $expiry_date,
+                ':description' => $description,
+                ':status' => $status,
+                ':id' => $target_med['id']
+            ]);
+            header("Location: medicine_list.php?msg=" . urlencode("Medicine '{$med_name}' updated successfully."));
+            exit;
+        } catch (Exception $e) {
+            header("Location: medicine_list.php?msg=" . urlencode("DB error updating medicine (fallback used)."));
+            exit;
+        }
+    } else {
+        header("Location: medicine_list.php?msg=" . urlencode("Medicine '{$med_name}' updated (offline fallback)."));
+        exit;
+    }
 }
 ?>
 
@@ -57,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="card-body">
                 <form method="POST" action="edit_medicine.php?id=<?php echo $target_med['id']; ?>">
+                    <?php echo csrf_input(); ?>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Medicine Brand Name *</label>

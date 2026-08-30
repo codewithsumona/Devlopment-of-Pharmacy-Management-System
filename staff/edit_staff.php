@@ -1,5 +1,51 @@
 <?php
 $path_prefix = '../';
+if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/db_helper.php';
+
+// Handle POST before templates
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+        header("Location: staff_list.php?msg=" . urlencode("Invalid CSRF token."));
+        exit;
+    }
+    $full_name = trim($_POST['full_name'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $role = $_POST['role'] ?? 'Staff';
+    $status = $_POST['status'] ?? 'Active';
+
+    if ($full_name === '' || $username === '' || $email === '') {
+        header("Location: staff_list.php?msg=" . urlencode("Missing required staff fields."));
+        exit;
+    }
+
+    $pdo = getDBConnection();
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE users SET username = :username, full_name = :full_name, email = :email, phone = :phone, role = :role, status = :status WHERE id = :id");
+            $stmt->execute([
+                ':username' => $username,
+                ':full_name' => $full_name,
+                ':email' => $email,
+                ':phone' => $phone,
+                ':role' => $role,
+                ':status' => $status,
+                ':id' => $target_staff['id']
+            ]);
+            header("Location: staff_list.php?msg=" . urlencode("Staff '{$full_name}' updated."));
+            exit;
+        } catch (Exception $e) {
+            header("Location: staff_list.php?msg=" . urlencode("DB error updating staff."));
+            exit;
+        }
+    } else {
+        header("Location: staff_list.php?msg=" . urlencode("Staff '{$full_name}' updated (offline fallback)."));
+        exit;
+    }
+}
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/sidebar.php';
 
@@ -14,12 +60,6 @@ foreach ($staff_members as $st) {
     }
 }
 if (!$target_staff) $target_staff = $staff_members[0];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $staff_name = htmlspecialchars($_POST['full_name'] ?? 'Staff Member');
-    header("Location: staff_list.php?msg=" . urlencode("Staff member '{$staff_name}' updated successfully!"));
-    exit;
-}
 ?>
 
 <div class="main-wrapper">
@@ -47,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="card-body">
                 <form method="POST" action="edit_staff.php?id=<?php echo $target_staff['id']; ?>">
+                    <?php echo csrf_input(); ?>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Full Name *</label>

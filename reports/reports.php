@@ -101,14 +101,45 @@ $filter_period = $_GET['period'] ?? 'week';
                 <div class="card-header">
                     <div class="card-title"><i class="fa-solid fa-truck-ramp-box"></i> Vendor Purchase Orders Report</div>
                 </div>
-                <div class="card-body" style="padding:0;">
-                    <table class="table">
+                <div class="card-body">
+                    <canvas id="purchaseChart" height="120" style="margin-bottom:1rem;"></canvas>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding:0;">
+                        <table class="table">
                         <thead>
                             <tr><th>PO #</th><th>Vendor Supplier</th><th>Order Date</th><th>Units Procured</th><th>Total Expense</th><th>Status</th></tr>
                         </thead>
                         <tbody>
                             <tr><td><code>PO-2026-101</code></td><td>Square Pharmaceuticals Ltd.</td><td>2026-08-01</td><td>450 Units</td><td>$495.00</td><td><span class="badge badge-in-stock">Received</span></td></tr>
                             <tr><td><code>PO-2026-102</code></td><td>Beximco Pharmaceuticals Ltd.</td><td>2026-08-03</td><td>120 Units</td><td>$3,360.00</td><td><span class="badge badge-in-stock">Received</span></td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+        <?php elseif ($active_tab == 'inventory'): ?>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-boxes-stacked" style="color:var(--primary);"></i> Inventory Valuation by Category</div>
+                    <button class="btn btn-sm btn-outline" onclick="exportReportDemo('CSV')">Export CSV</button>
+                </div>
+                <div class="card-body">
+                    <canvas id="inventoryChart" height="140"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><div class="card-title"><i class="fa-solid fa-table"></i> Inventory Summary</div></div>
+                <div class="card-body" style="padding:0;">
+                    <table class="table">
+                        <thead><tr><th>Category</th><th>SKUs</th><th>Stock Qty</th><th>Valuation ($)</th></tr></thead>
+                        <tbody>
+                            <tr><td>Analgesics</td><td>12</td><td>420</td><td>$1,215.00</td></tr>
+                            <tr><td>Gastric</td><td>8</td><td>72</td><td>$72.00</td></tr>
+                            <tr><td>Antibiotics</td><td>6</td><td>140</td><td>$4,200.00</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -118,17 +149,23 @@ $filter_period = $_GET['period'] ?? 'week';
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><i class="fa-solid fa-calendar-xmark" style="color:var(--purple);"></i> Near-Expiry & Expired Inventory Report</div>
+                    <button class="btn btn-sm btn-outline" onclick="exportReportDemo('CSV')">Export CSV</button>
                 </div>
-                <div class="card-body" style="padding:0;">
-                    <table class="table">
-                        <thead>
-                            <tr><th>Medicine Name</th><th>Batch #</th><th>Expiry Date</th><th>Stock Qty</th><th>Disposal Status</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr><td><strong>Ceevit 250mg Chewable</strong></td><td><code>SQ-CV-102</code></td><td>2025-01-10</td><td>300 Units</td><td><span class="badge badge-expired">Expired - Quarantine</span></td></tr>
-                            <tr><td><strong>Avolac Syrup 100ml</strong></td><td><code>IN-AV2023-99</code></td><td>2026-05-10</td><td>4 Units</td><td><span class="badge badge-warning">Expires in 90 Days</span></td></tr>
-                        </tbody>
-                    </table>
+                <div class="card-body">
+                    <canvas id="expiryChart" height="120" style="margin-bottom:1rem;"></canvas>
+                </div>
+
+                <div class="card">
+                    <div class="card-body" style="padding:0;">
+                        <table class="table" id="expiryTable">
+                            <thead>
+                                <tr><th>Medicine Name</th><th>Batch #</th><th>Expiry Date</th><th>Stock Qty</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="5">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -159,23 +196,120 @@ $filter_period = $_GET['period'] ?? 'week';
 document.addEventListener("DOMContentLoaded", function() {
     const ctx = document.getElementById('reportChart');
     if (ctx) {
-        new Chart(ctx.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: ['Aug 02', 'Aug 03', 'Aug 04', 'Aug 05', 'Aug 06', 'Aug 07', 'Aug 08'],
-                datasets: [{
-                    label: 'Net Revenue ($)',
-                    data: [420, 680, 510, 730, 520, 780, 550],
-                    backgroundColor: '#0d9488',
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } }
-            }
-        });
+        // Fetch sales data from API
+        fetch('data_sales.php?period=<?php echo $filter_period; ?>')
+            .then(r => r.json())
+            .then(json => {
+                if (!json.success) throw new Error(json.message || 'No data');
+                new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: json.labels,
+                        datasets: [{
+                            label: 'Net Revenue ($)',
+                            data: json.data,
+                            backgroundColor: '#0d9488',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            })
+            .catch(err => {
+                console.error('Report data error', err);
+            });
     }
+    // Inventory chart
+    const invCtx = document.getElementById('inventoryChart');
+    if (invCtx) {
+        fetch('data_inventory.php')
+            .then(r => r.json())
+            .then(json => {
+                if (!json.success) throw new Error(json.message || 'No data');
+                new Chart(invCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: { labels: json.labels, datasets: [{ data: json.data, backgroundColor: ['#0ea5a4','#f97316','#06b6d4','#a78bfa'] }] },
+                    options: { responsive: true, plugins: { legend: { position: 'right' } } }
+                });
+            })
+            .catch(err => console.error('Inventory data error', err));
+    }
+
+    // Purchases chart
+    const purchaseCtx = document.getElementById('purchaseChart');
+    if (purchaseCtx) {
+        fetch('data_purchases.php?period=<?php echo $filter_period; ?>')
+            .then(r => r.json())
+            .then(json => {
+                if (!json.success) throw new Error(json.message || 'No data');
+                new Chart(purchaseCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: json.labels,
+                        datasets: [{ label: 'Purchases ($)', data: json.data, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill: true, tension: 0.2 }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            })
+            .catch(err => console.error('Purchases data error', err));
+    }
+
+    // Expiry chart + table
+    const expiryCtx = document.getElementById('expiryChart');
+    const expiryTable = document.getElementById('expiryTable');
+    if (expiryCtx) {
+        fetch('data_expiry.php')
+            .then(r => r.json())
+            .then(json => {
+                if (!json.success) throw new Error(json.message || 'No data');
+                new Chart(expiryCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: { labels: json.labels, datasets: [{ label: 'Count', data: json.data, backgroundColor: ['#ef4444','#f59e0b','#10b981'] }] },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+
+                // populate table
+                if (expiryTable && json.rows) {
+                    const tbody = expiryTable.querySelector('tbody');
+                    tbody.innerHTML = '';
+                    json.rows.forEach(r => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${escapeHtml(r.name)}</td><td><code>${escapeHtml(r.batch_no)}</code></td><td>${escapeHtml(r.expiry_date)}</td><td>${escapeHtml(r.stock_quantity)}</td><td>${escapeHtml(r.status)}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                }
+            })
+            .catch(err => console.error('Expiry data error', err));
+    }
+
+    // Low-stock chart + table
+    const lowCtx = document.getElementById('lowStockChart');
+    const lowTable = document.getElementById('lowStockTable');
+    if (lowCtx) {
+        fetch('data_low_stock.php?threshold=10')
+            .then(r => r.json())
+            .then(json => {
+                if (!json.success) throw new Error(json.message || 'No data');
+                new Chart(lowCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: { labels: json.labels, datasets: [{ label: 'Stock Qty', data: json.data, backgroundColor: '#f97316' }] },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+                if (lowTable && json.rows) {
+                    const tbody = lowTable.querySelector('tbody');
+                    tbody.innerHTML = '';
+                    json.rows.forEach(r => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${escapeHtml(r.name)}</td><td><code>${escapeHtml(r.batch_no)}</code></td><td>${escapeHtml(r.stock_quantity)}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                }
+            })
+            .catch(err => console.error('Low stock data error', err));
+    }
+
+    // small util for escaping
+    function escapeHtml(s) { return (s === null || s === undefined) ? '' : String(s).replace(/[&"'<>]/g, function (c) { return {'&':'&amp;','"':'&quot;',"'":"&#39;",'<':'&lt;','>':'&gt;'}[c]; }); }
 });
 </script>
 

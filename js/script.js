@@ -94,13 +94,22 @@ function handleGlobalSearch(e) {
 }
 
 // Confirm Delete Modal Trigger
-function confirmDelete(itemTitle, deleteUrl) {
+function confirmDelete(itemTitle, targetPage, id) {
     openModal(
         'Confirm Deletion',
         `<p style="font-size: 1rem; color: #475569;">Are you sure you want to delete <strong>${itemTitle}</strong>?</p>
-         <p style="font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem;"><i class="fa-solid fa-triangle-exclamation"></i> This action is for prototype presentation and can be reverted.</p>`,
+         <p style="font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem;"><i class="fa-solid fa-triangle-exclamation"></i> This action cannot be undone.</p>`,
         `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-         <a href="${deleteUrl}" class="btn btn-danger" onclick="showToast('Item deleted successfully', 'danger'); closeModal(); return true;">Delete Permanently</a>`
+         <button class="btn btn-danger" onclick="(function(){
+             // build and submit a POST form with CSRF token
+             const form = document.createElement('form');
+             form.method = 'POST';
+             form.action = targetPage;
+             const idInput = document.createElement('input'); idInput.type = 'hidden'; idInput.name = 'delete_id'; idInput.value = id; form.appendChild(idInput);
+             const tokenInput = document.createElement('input'); tokenInput.type = 'hidden'; tokenInput.name = 'csrf_token'; tokenInput.value = (window.CSRF_TOKEN || ''); form.appendChild(tokenInput);
+             document.body.appendChild(form);
+             form.submit();
+         })(); closeModal(); showToast('Delete submitted','info');">Delete Permanently</button>`
     );
 }
 
@@ -252,64 +261,80 @@ function processCompleteSale() {
     let discountVal = (subtotal * discountPercent) / 100;
     let grandTotal = subtotal - discountVal;
     
-    const invoiceNo = 'INV-2026-' + Math.floor(100 + Math.random() * 900);
-    const currentDate = new Date().toLocaleString();
+    // Prepare payload for server
+    const payload = {
+        customer_name: customerName,
+        payment_method: paymentMethod,
+        discount_percent: discountPercent,
+        subtotal: subtotal,
+        grand_total: grandTotal,
+        items: posCart.map(i => ({ medicine_id: i.id, name: i.name, unit_price: i.price, quantity: i.qty }))
+    };
 
-    let receiptItemsHtml = '';
-    posCart.forEach(item => {
-        receiptItemsHtml += `
-            <tr>
-                <td>${item.name} x${item.qty}</td>
-                <td>$${(item.price * item.qty).toFixed(2)}</td>
-            </tr>
-        `;
+    // POST to server-side sale handler (relative path: sales/complete_sale.php when called from sales/new_sale.php)
+    fetch('complete_sale.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data && data.success) {
+            // Build receipt with server-provided invoice/time
+            let receiptItemsHtml = '';
+            posCart.forEach(item => {
+                receiptItemsHtml += `\n<tr><td>${item.name} x${item.qty}</td><td>$${(item.price * item.qty).toFixed(2)}</td></tr>`;
+            });
+
+            const thermalReceiptHtml = `
+                <div class="thermal-receipt">
+                    <div class="receipt-header">
+                        <h3>Mergen Pharmacy</h3>
+                        <p>Healthcare & Wellness Center</p>
+                        <hr>
+                        <p><strong>INVOICE: ${data.invoice_no}</strong></p>
+                        <p>Date: ${data.sale_date}</p>
+                        <p>Customer: ${customerName}</p>
+                        <p>Payment Method: ${paymentMethod}</p>
+                    </div>
+                    <table class="receipt-table">
+                        <thead><tr><th>Item</th><th>Total</th></tr></thead>
+                        <tbody>
+                            ${receiptItemsHtml}
+                        </tbody>
+                    </table>
+                    <hr>
+                    <div style="display:flex; justify-content:space-between; font-size:11px;"><span>Subtotal:</span><span>$${subtotal.toFixed(2)}</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:11px;"><span>Discount (${discountPercent}%):</span><span>-$${discountVal.toFixed(2)}</span></div>
+                    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; margin-top:4px;"><span>GRAND TOTAL:</span><span>$${grandTotal.toFixed(2)}</span></div>
+                    <div class="receipt-footer"><p>Thank you for choosing Mergen Pharmacy!</p></div>
+                </div>
+            `;
+
+            openModal(
+                `Sale Completed - ${data.invoice_no}`,
+                thermalReceiptHtml,
+                `<button class="btn btn-secondary" onclick="closeModal(); clearCart();">Close</button>
+                 <button class="btn btn-primary" onclick="window.print(); closeModal(); clearCart();"><i class="fa-solid fa-print"></i> Print Receipt</button>`
+            );
+
+            showToast('Sale recorded successfully!', 'success');
+        } else {
+            showToast((data && data.message) ? data.message : 'Failed to record sale on server.', 'danger');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('Network error while saving sale. Receipt shown locally only.', 'danger');
+
+        // Fallback: show local receipt if server fails
+        const invoiceNo = 'INV-LOCAL-' + Math.floor(100 + Math.random() * 900);
+        const currentDate = new Date().toLocaleString();
+        let receiptItemsHtml = '';
+        posCart.forEach(item => { receiptItemsHtml += `\n<tr><td>${item.name} x${item.qty}</td><td>$${(item.price * item.qty).toFixed(2)}</td></tr>`; });
+        const thermalReceiptHtml = `...`;
+        openModal('Sale Completed - Offline Receipt', '<p>Offline receipt generated. Server save failed.</p>' + thermalReceiptHtml, `<button class="btn btn-secondary" onclick="closeModal(); clearCart();">Close</button>`);
     });
-
-    const thermalReceiptHtml = `
-        <div class="thermal-receipt">
-            <div class="receipt-header">
-                <h3>PharmaCare Pro</h3>
-                <p>University Medical Complex</p>
-                <p>Hotline: +880 2-8833047</p>
-                <hr>
-                <p><strong>INVOICE: ${invoiceNo}</strong></p>
-                <p>Date: ${currentDate}</p>
-                <p>Customer: ${customerName}</p>
-                <p>Payment Method: ${paymentMethod}</p>
-            </div>
-            <table class="receipt-table">
-                <thead>
-                    <tr><th>Item</th><th>Total</th></tr>
-                </thead>
-                <tbody>
-                    ${receiptItemsHtml}
-                </tbody>
-            </table>
-            <hr>
-            <div style="display:flex; justify-content:space-between; font-size:11px;">
-                <span>Subtotal:</span><span>$${subtotal.toFixed(2)}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:11px;">
-                <span>Discount (${discountPercent}%):</span><span>-$${discountVal.toFixed(2)}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; margin-top:4px;">
-                <span>GRAND TOTAL:</span><span>$${grandTotal.toFixed(2)}</span>
-            </div>
-            <div class="receipt-footer">
-                <p>Thank you for choosing PharmaCare!</p>
-                <p>Get well soon.</p>
-            </div>
-        </div>
-    `;
-
-    openModal(
-        'Sale Completed - Receipt Preview',
-        thermalReceiptHtml,
-        `<button class="btn btn-secondary" onclick="closeModal(); clearCart();">Close</button>
-         <button class="btn btn-primary" onclick="window.print(); closeModal(); clearCart();"><i class="fa-solid fa-print"></i> Print Receipt</button>`
-    );
-
-    showToast('Sale completed successfully!', 'success');
 }
 
 // Demo Report Generation Launcher
@@ -321,8 +346,17 @@ function triggerReportDemo(reportTitle) {
 }
 
 function exportReportDemo(format) {
-    showToast(`Exporting report as ${format}...`, 'info');
-    setTimeout(() => {
-        showToast(`Report downloaded successfully as Pharma_Report.${format.toLowerCase()}`, 'success');
-    }, 800);
+    // Real export: navigate to CSV endpoint or open printable view for PDF
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab') || 'sales';
+    const period = params.get('period') || 'week';
+    if (format === 'CSV') {
+        const url = `reports/export.php?tab=${encodeURIComponent(tab)}&period=${encodeURIComponent(period)}&format=csv`;
+        window.location.href = url;
+    } else if (format === 'PDF') {
+        const url = `reports/print.php?tab=${encodeURIComponent(tab)}&period=${encodeURIComponent(period)}`;
+        window.open(url, '_blank');
+    } else {
+        showToast('Unsupported export format', 'danger');
+    }
 }

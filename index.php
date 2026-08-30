@@ -1,7 +1,7 @@
 <?php
 /**
  * Main Entry Point
- * Pharmacy Management System Prototype
+ * Mergen Pharmacy Management System
  */
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

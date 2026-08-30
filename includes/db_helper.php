@@ -1,7 +1,7 @@
 <?php
 /**
- * Database Helper & Prototype Fallback Engine
- * Pharmacy Management System Prototype - SAD Lab Project
+ * Database Helper & Sample Data Engine
+ * Mergen Pharmacy Management System
  */
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -211,6 +211,32 @@ function get_all_sales() {
             if (!empty($rows)) return $rows;
         } catch (Exception $e) {}
     }
+
+    $logFile = __DIR__ . '/../logs/sales_log.json';
+    if (file_exists($logFile)) {
+        $raw = @file_get_contents($logFile);
+        if ($raw !== false) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                $rows = [];
+                foreach ($decoded as $sale) {
+                    $rows[] = [
+                        'id' => $sale['id'] ?? 0,
+                        'invoice_no' => $sale['invoice_no'] ?? 'INV-LOCAL',
+                        'customer_name' => $sale['customer_name'] ?? 'Walk-in Customer',
+                        'customer_phone' => $sale['customer_phone'] ?? '',
+                        'pharmacist_name' => $sale['pharmacist_name'] ?? 'System User',
+                        'grand_total' => (float)($sale['grand_total'] ?? 0),
+                        'payment_method' => $sale['payment_method'] ?? 'Cash',
+                        'payment_status' => $sale['payment_status'] ?? 'Paid',
+                        'sale_date' => $sale['sale_date'] ?? date('Y-m-d H:i:s')
+                    ];
+                }
+                return $rows;
+            }
+        }
+    }
+
     return [
         ['id' => 1, 'invoice_no' => 'INV-2026-001', 'customer_name' => 'Mr. Rahman', 'customer_phone' => '+880 1711-223344', 'pharmacist_name' => 'Alex Rivera, PharmD', 'grand_total' => 140.00, 'payment_method' => 'Cash', 'payment_status' => 'Paid', 'sale_date' => '2026-08-08 10:15:00'],
         ['id' => 2, 'invoice_no' => 'INV-2026-002', 'customer_name' => 'Walk-in Customer', 'customer_phone' => 'N/A', 'pharmacist_name' => 'Alex Rivera, PharmD', 'grand_total' => 85.50, 'payment_method' => 'Card', 'payment_status' => 'Paid', 'sale_date' => '2026-08-08 11:40:00'],

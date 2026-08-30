@@ -9,8 +9,8 @@ $role = $_SESSION['user_role'] ?? 'Admin';
             <i class="fa-solid fa-prescription-bottle-medical"></i>
         </div>
         <div class="sidebar-brand">
-            <h2>PharmaCare</h2>
-            <span>PRO Prototype v1.0</span>
+            <h2>Mergen Pharmacy</h2>
+            <span>Management System</span>
         </div>
     </div>
 

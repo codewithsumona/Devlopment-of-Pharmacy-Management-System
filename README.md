@@ -1,10 +1,10 @@
-# PharmaCare PRO - Pharmacy Management System Prototype
-**System Analysis & Design (SAD) Lab Project Presentation Prototype**
+# Mergen Pharmacy
+**Pharmacy Management System Interface**
 
 ---
 
 ## 📌 Project Overview
-PharmaCare PRO is a modern, professional, interactive **Pharmacy Management System Prototype** engineered for university **System Analysis and Design (SAD)** lab demonstrations. 
+Mergen Pharmacy is a modern, professional, interactive **pharmacy management system interface** designed to showcase pharmacy operations and workflow.
 
 It showcases the user interface, navigation workflows, role-based controls, POS checkout, stock management, and reporting analytics of a pharmacy software platform.
 
@@ -21,7 +21,7 @@ It showcases the user interface, navigation workflows, role-based controls, POS 
 
 ### Step 1: Copy Project Folder to XAMPP `htdocs`
 1. Open XAMPP Control Panel and start **Apache** and **MySQL**.
-2. Copy the `pharmacy_management_prototype` folder into your XAMPP `htdocs` directory:
+2. Copy the project folder into your XAMPP `htdocs` directory:
    ```
    C:\xampp\htdocs\pharmacy_management_prototype
    ```
@@ -30,13 +30,20 @@ It showcases the user interface, navigation workflows, role-based controls, POS 
 1. Open your browser and navigate to: `http://localhost/phpmyadmin/`
 2. Click **Databases** tab and create a new database named `pharmacy_management`.
 3. Select `pharmacy_management` database and click **Import** tab.
-4. Click **Choose File** and select `pharmacy_management.sql` located inside:
-   ```
-   d:/pharmacy_management_prototype/database/pharmacy_management.sql
-   ```
+4. Click **Choose File** and select `pharmacy_management.sql` located inside the project folder.
 5. Click **Import** at the bottom to seed default tables and sample records.
 
-> **Note**: The prototype also features an offline fallback engine (`includes/db_helper.php`) so that even if MySQL is disconnected during initial preview, all pages render complete data.
+> **Note**: The system includes an offline fallback engine (`includes/db_helper.php`) so that even if MySQL is disconnected during initial preview, all pages render complete data.
+
+### Step 2a: Verify Database Connection (Quick Check)
+
+After importing the SQL or to quickly verify your MySQL connection, open this URL in your browser:
+
+```
+http://localhost/pharmacy_management_prototype/db_test.php
+```
+
+The page will report whether the application can successfully connect to the configured `pharmacy_management` database. If the connection fails, check `config/database.php` for credentials and inspect `logs/db_errors.log` for the PDO error message.
 
 ### Step 3: Run the Application
 Access the app in your browser:
@@ -45,6 +52,17 @@ http://localhost/pharmacy_management_prototype/
 ```
 
 ---
+
+## 🔎 Smoke Tests
+
+A small smoke-test script is included to verify key pages and API endpoints respond. Run it from the command line (PHP CLI) after starting Apache:
+
+```bash
+php tools/smoke_test.php http://localhost/pharmacy_management_prototype
+```
+
+The script issues simple GET requests and reports HTTP status codes. It performs non-destructive checks (lists, reports, exports). For POST/DELETE operations, use the UI to test authenticated flows.
+
 
 ## 🔑 Default Login Credentials
 
@@ -92,7 +110,7 @@ graph TD
 
 ## 📄 System Analysis & Design (SAD) Scope Notes
 
-### Executed Prototype Functionalities
+### Core Functionalities
 * UI/UX Design & Navigation Architecture
 * Master Medicine Cataloging & Barcode Mocking
 * POS Sales Terminal & Thermal Invoice Generator

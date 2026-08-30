@@ -5,7 +5,26 @@ require_once __DIR__ . '/../includes/sidebar.php';
 
 $purchases = get_all_purchases();
 
+// Handle delete action
 $action_msg = '';
+if (isset($_GET['delete'])) {
+    $delId = (int)$_GET['delete'];
+    $pdo = getDBConnection();
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("DELETE FROM purchases WHERE id = :id");
+            $stmt->execute([':id' => $delId]);
+            $action_msg = "Purchase order #{$delId} deleted successfully.";
+        } catch (Exception $e) {
+            $action_msg = "Unable to delete purchase via DB (prototype fallback).";
+        }
+    } else {
+        $action_msg = "Delete simulated (offline fallback) for Purchase #{$delId}.";
+    }
+    header('Location: purchase_list.php?msg=' . urlencode($action_msg));
+    exit;
+}
+
 if (isset($_GET['msg'])) {
     $action_msg = htmlspecialchars($_GET['msg']);
 }

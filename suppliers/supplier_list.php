@@ -5,7 +5,31 @@ require_once __DIR__ . '/../includes/sidebar.php';
 
 $suppliers = get_all_suppliers();
 
+// Handle delete action via POST + CSRF
 $action_msg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    require_once __DIR__ . '/../includes/csrf.php';
+    $delId = (int)$_POST['delete_id'];
+    if (!csrf_verify($_POST['csrf_token'] ?? '')) {
+        $action_msg = 'Invalid CSRF token.';
+    } else {
+        $pdo = getDBConnection();
+        if ($pdo) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM suppliers WHERE id = :id");
+                $stmt->execute([':id' => $delId]);
+                $action_msg = "Supplier #{$delId} deleted successfully.";
+            } catch (Exception $e) {
+                $action_msg = "Unable to delete supplier via DB (prototype fallback).";
+            }
+        } else {
+            $action_msg = "Delete simulated (offline fallback) for Supplier #{$delId}.";
+        }
+    }
+    header('Location: supplier_list.php?msg=' . urlencode($action_msg));
+    exit;
+}
+
 if (isset($_GET['msg'])) {
     $action_msg = htmlspecialchars($_GET['msg']);
 }
@@ -74,7 +98,7 @@ if (isset($_GET['msg'])) {
                                         <a href="edit_supplier.php?id=<?php echo $sup['id']; ?>" class="btn btn-sm btn-outline btn-icon" title="Edit Supplier" style="color:var(--secondary);">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
-                                        <button class="btn btn-sm btn-outline btn-icon" title="Delete Supplier" style="color:var(--danger);" onclick="confirmDelete('<?php echo htmlspecialchars($sup['supplier_name']); ?>', 'supplier_list.php?delete=<?php echo $sup['id']; ?>')">
+                                        <button class="btn btn-sm btn-outline btn-icon" title="Delete Supplier" style="color:var(--danger);" onclick="confirmDelete('<?php echo htmlspecialchars($sup['supplier_name']); ?>', 'supplier_list.php', <?php echo $sup['id']; ?>)">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </div>

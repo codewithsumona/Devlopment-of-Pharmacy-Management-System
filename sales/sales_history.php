@@ -78,8 +78,8 @@ function viewHistoricalInvoice(invNo, customer, total, payment, date) {
     const html = `
         <div class="thermal-receipt">
             <div class="receipt-header">
-                <h3>PharmaCare Pro</h3>
-                <p>University Medical Complex</p>
+                <h3>Mergen Pharmacy</h3>
+                <p>Healthcare & Wellness Center</p>
                 <hr>
                 <p><strong>INVOICE: ${invNo}</strong></p>
                 <p>Date: ${date}</p>
@@ -100,7 +100,7 @@ function viewHistoricalInvoice(invNo, customer, total, payment, date) {
                 <span>TOTAL PAID:</span><span>$${total}</span>
             </div>
             <div class="receipt-footer">
-                <p>Thank you for choosing PharmaCare!</p>
+                <p>Thank you for choosing Mergen Pharmacy!</p>
             </div>
         </div>
     `;

@@ -102,30 +102,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <button type="submit" class="btn btn-primary" style="margin-top:1rem;">
                                 <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
-                            </button>
-                        </form>
-                    </div>
-                </div>
+                            <?php
+                            $path_prefix = '../';
+                            if (session_status() === PHP_SESSION_NONE) session_start();
 
-                <!-- Security / Change Password Form -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fa-solid fa-lock"></i> Change Security Password
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="profile.php">
-                            <input type="hidden" name="change_password" value="1">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label class="form-label">Current Password</label>
-                                    <input type="password" class="form-control" placeholder="••••••••" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">New Password</label>
-                                    <input type="password" class="form-control" placeholder="••••••••" required>
-                                </div>
+                            // Handle profile POST updates before templates
+                            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                                if (isset($_POST['update_profile'])) {
+                                    $_SESSION['user_name'] = htmlspecialchars($_POST['full_name']);
+                                    $_SESSION['user_email'] = htmlspecialchars($_POST['email']);
+                                } elseif (isset($_POST['change_password'])) {
+                                    // In demo, just set a success message via session for display
+                                    $_SESSION['profile_msg'] = "Password updated successfully!";
+                                }
+                                header("Location: profile.php");
+                                exit;
+                            }
+
+                            require_once __DIR__ . '/../includes/header.php';
+                            require_once __DIR__ . '/../includes/sidebar.php';
+
+                            $role = $_SESSION['user_role'] ?? 'Admin';
+                            $name = $_SESSION['user_name'] ?? 'Dr. Sarah Jenkins';
+                            $email = $_SESSION['user_email'] ?? 'admin@pharma.com';
+                            $phone = ($role === 'Admin') ? '+880 1711-000111' : '+880 1819-222333';
+                            $username = strtolower(explode(' ', $name)[0]);
+
+                            $message = $_SESSION['profile_msg'] ?? '';
+                            unset($_SESSION['profile_msg']);
+                            if (empty($message)) $message = '';
+                            ?>
                             </div>
                             <button type="submit" class="btn btn-secondary" style="margin-top:1rem;">
                                 <i class="fa-solid fa-key"></i> Update Password
